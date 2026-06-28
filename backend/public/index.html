@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReleaseCheck</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    body {
+      background-color: #f7f8fa;
+      color: #333;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Master-Detail Layout */
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+    
+    /* LEFT SIDEBAR (List) */
+    .sidebar {
+      width: 450px;
+      min-width: 350px;
+      background-color: #ffffff;
+      border-right: 1px solid #e1e4e8;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid #e1e4e8;
+    }
+    
+    .sidebar-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .sidebar-header p {
+      font-size: 14px;
+      color: #586069;
+    }
+    
+    .new-release-btn {
+      margin-top: 16px;
+      width: 100%;
+      padding: 10px;
+      background-color: #2ea44f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .new-release-btn:hover {
+      background-color: #278741;
+    }
+    
+    .release-table-container {
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      text-align: left;
+      padding: 12px 24px;
+      border-bottom: 1px solid #f1f1f1;
+    }
+    
+    th {
+      font-size: 12px;
+      font-weight: 600;
+      color: #586069;
+      text-transform: uppercase;
+    }
+    
+    tr {
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    tbody tr:hover {
+      background-color: #f6f8fa;
+    }
+    
+    tr.active {
+      background-color: #eff5fb;
+      border-left: 3px solid #0366d6;
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .status-planned { background-color: #e1e4e8; color: #586069; }
+    .status-ongoing { background-color: #fff8c5; color: #735c0f; }
+    .status-done { background-color: #d4edda; color: #155724; }
+    
+    /* RIGHT MAIN CONTENT (Details) */
+    .main-content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+      background-color: #ffffff;
+    }
+    
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #586069;
+      font-size: 16px;
+    }
+    
+    .breadcrumb {
+      font-size: 14px;
+      color: #586069;
+      margin-bottom: 24px;
+    }
+    
+    .breadcrumb span {
+      color: #0366d6;
+      font-weight: 500;
+    }
+    
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+    }
+    
+    .detail-header h2 {
+      font-size: 24px;
+    }
+    
+    .btn-danger {
+      background-color: #ffffff;
+      color: #cb2431;
+      border: 1px solid #cb2431;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .btn-danger:hover {
+      background-color: #cb2431;
+      color: white;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    label {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #24292e;
+    }
+    
+    input[type="text"],
+    input[type="datetime-local"] {
+      padding: 8px 12px;
+      border: 1px solid #d1d5da;
+      border-radius: 6px;
+      font-size: 14px;
+      background-color: #fafbfc;
+      color: #586069; /* Looks disabled but keeps text selectable */
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e1e4e8;
+    }
+    
+    .checklist-container {
+      margin-bottom: 32px;
+    }
+    
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f1f1;
+    }
+    
+    .checklist-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 12px;
+      cursor: pointer;
+      accent-color: #2ea44f;
+    }
+    
+    .checklist-item label {
+      font-size: 14px;
+      font-weight: 400;
+      color: #24292e;
+      cursor: pointer;
+      margin: 0;
+    }
+    
+    .notes-section textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid #d1d5da;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    
+    .btn-save {
+      background-color: #0366d6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    .btn-save:hover {
+      background-color: #0256b9;
+    }
+
+    /* Modal Base */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .modal-content h3 { margin-bottom: 16px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .btn-cancel {
+      background: #f1f1f1; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>ReleaseCheck</h1>
+        <p>all-in-one release checklist tool</p>
+        <button class="new-release-btn" id="openNewReleaseModal">+ New release</button>
+      </div>
+      <div class="release-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Release</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="release-list-body">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+        <div id="loading-msg" style="padding: 20px; color: #586069; text-align: center;">Loading releases...</div>
+      </div>
+    </div>
+
+    <!-- RIGHT DETAILS -->
+    <div class="main-content" id="detail-panel">
+      <div class="empty-state" id="empty-state">
+        Select a release from the list to view details
+      </div>
+      
+      <div id="release-details" style="display: none;">
+        <div class="breadcrumb">
+          All releases > <span id="breadcrumb-name"></span>
+        </div>
+        
+        <div class="detail-header">
+          <h2 id="detail-title">Release Details</h2>
+          <button class="btn-danger" id="delete-btn">Delete</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Version / Name</label>
+            <input type="text" id="detail-name" disabled>
+          </div>
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="datetime-local" id="detail-date" disabled>
+          </div>
+        </div>
+
+        <div class="checklist-container">
+          <div class="section-title">Checklist</div>
+          <div id="checklist-items">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="notes-section">
+          <div class="section-title">Additional Notes</div>
+          <textarea id="detail-notes" placeholder="Add any additional release notes here..."></textarea>
+          <button class="btn-save" id="save-notes-btn">Save Notes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW RELEASE MODAL -->
+  <div class="modal" id="new-release-modal">
+    <div class="modal-content">
+      <h3>Create New Release</h3>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>Release Name / Version</label>
+        <input type="text" id="modal-name" placeholder="e.g., Version 1.0.1" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <div class="form-group">
+        <label>Due Date</label>
+        <input type="datetime-local" id="modal-date" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="close-modal">Cancel</button>
+        <button class="btn-save" id="create-release-btn">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    let releases = [];
+    let selectedReleaseId = null;
+
+    // Updated steps based on your mockup
+    const RELEASE_STEPS = [
+      "All relevant GitHub pull requests have been merged",
+      "Version number bumped in configuration files",
+      "Changelog updated with latest features/fixes",
+      "All unit and integration tests passing",
+      "Code review approved by at least one peer",
+      "Database migration scripts prepared and reviewed",
+      "Staging environment deployment successful",
+      "Smoke tests passed on staging environment",
+      "Deployment notification sent to stakeholders",
+      "Production deployment completed and verified"
+    ];
+
+    // DOM Elements
+    const listBody = document.getElementById('release-list-body');
+    const detailPanel = document.getElementById('detail-panel');
+    const emptyState = document.getElementById('empty-state');
+    const releaseDetails = document.getElementById('release-details');
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchReleases();
+      setupEventListeners();
+      setDefaultModalDate();
+    });
+
+    function setDefaultModalDate() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('modal-date').value = now.toISOString().slice(0, 16);
+    }
+
+    function setupEventListeners() {
+      document.getElementById('openNewReleaseModal').addEventListener('click', () => {
+        document.getElementById('new-release-modal').classList.add('active');
+      });
+      
+      document.getElementById('close-modal').addEventListener('click', () => {
+        document.getElementById('new-release-modal').classList.remove('active');
+      });
+
+      document.getElementById('create-release-btn').addEventListener('click', handleCreateRelease);
+      document.getElementById('save-notes-btn').addEventListener('click', handleSaveNotes);
+      document.getElementById('delete-btn').addEventListener('click', handleDeleteRelease);
+    }
+
+    async function fetchReleases() {
+      try {
+        const res = await fetch(`${API_URL}/releases`);
+        releases = await res.json();
+        document.getElementById('loading-msg').style.display = 'none';
+        renderList();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading-msg').innerText = "Error loading data";
+      }
+    }
+
+    function renderList() {
+      listBody.innerHTML = '';
+      if (releases.length === 0) {
+        listBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">No releases found</td></tr>';
+        return;
+      }
+
+      releases.forEach(rel => {
+        const tr = document.createElement('tr');
+        tr.className = rel.id === selectedReleaseId ? 'active' : '';
+        
+        const dateObj = new Date(rel.date);
+        const dateStr = dateObj.toLocaleDateString();
+        
+        tr.innerHTML = `
+          <td>${rel.name}</td>
+          <td>${dateStr}</td>
+          <td><span class="status-badge status-${rel.status}">${rel.status}</span></td>
+        `;
+        
+        tr.addEventListener('click', () => selectRelease(rel.id));
+        listBody.appendChild(tr);
+      });
+    }
+
+    function selectRelease(id) {
+      selectedReleaseId = id;
+      const rel = releases.find(r => r.id === id);
+      if (!rel) return;
+
+      emptyState.style.display = 'none';
+      releaseDetails.style.display = 'block';
+
+      // Populate Header
+      document.getElementById('detail-title').innerText = rel.name;
+      document.getElementById('breadcrumb-name').innerText = rel.name;
+      
+      // Populate Inputs (Format date for input field)
+      const dateObj = new Date(rel.date);
+      dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+      document.getElementById('detail-name').value = rel.name;
+      document.getElementById('detail-date').value = dateObj.toISOString().slice(0, 16);
+      
+      // Populate Notes
+      document.getElementById('detail-notes').value = rel.additional_info || '';
+
+      // Populate Checklist
+      const checklistContainer = document.getElementById('checklist-items');
+      checklistContainer.innerHTML = '';
+      
+      RELEASE_STEPS.forEach((stepText, index) => {
+        const stepNum = index + 1;
+        const isChecked = rel.steps_completed.includes(stepNum);
+        
+        const div = document.createElement('div');
+        div.className = 'checklist-item';
+        div.innerHTML = `
+          <input type="checkbox" id="step-${stepNum}" ${isChecked ? 'checked' : ''}>
+          <label for="step-${stepNum}">${stepText}</label>
+        `;
+        
+        div.querySelector('input').addEventListener('change', (e) => {
+          handleToggleStep(rel.id, stepNum, e.target.checked);
+        });
+        
+        checklistContainer.appendChild(div);
+      });
+
+      renderList(); // Re-render list to update active row styling
+    }
+
+    async function handleToggleStep(releaseId, stepNumber, isChecked) {
+      try {
+        // The backend toggles based on current state, so we just send the step number
+        const res = await fetch(`${API_URL}/releases/${releaseId}/steps`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stepNumber })
+        });
+        
+        const updatedRel = await res.json();
+        
+        // Update local state
+        const index = releases.findIndex(r => r.id === releaseId);
+        if (index !== -1) releases[index] = updatedRel;
+        
+        // Refresh UI
+        renderList();
+        // Don't re-call selectRelease to avoid losing textarea focus
+        document.querySelector(`#release-details .status-badge`)?.remove(); // simple hack to not duplicate if we had one
+        
+      } catch (err) {
+        console.error("Failed to toggle step", err);
+        // Revert checkbox on error
+        selectRelease(releaseId); 
+      }
+    }
+
+    async function handleSaveNotes() {
+      if (!selectedReleaseId) return;
+      const notes = document.getElementById('detail-notes').value;
+      
+      try {
+        const res = await fetch(`${API_URL}/releases/${selectedReleaseId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ additional_info: notes })
+        });
+        
+        const updatedRel = await res.json();
+        const index = releases.findIndex(r => r.id === selectedReleaseId);
+        if (index !== -1) releases[index] = updatedRel;
+        
+        alert("Notes saved successfully!");
+      } catch (err) {
+        console.error("Failed to save notes", err);
+        alert("Error saving notes.");
+      }
+    }
+
+    async function handleCreateRelease() {
+      const name = document.getElementById('modal-name').value;
+      const date = document.getElementById('modal-date').value;
+      
+      if (!name || !date) {
+        alert("Name and Date are required.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/releases`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, date })
+        });
+        
+        const newRel = await res.json();
+        releases.unshift(newRel); // Add to top of list
+        
+        document.getElementById('new-release-modal').classList.remove('active');
+        document.getElementById('modal-name').value = '';
+        setDefaultModalDate();
+        
+        renderList();
+        selectRelease(newRel.id);
+      } catch (err) {
+        console.error("Failed to create release", err);
+        alert("Error creating release.");
+      }
+    }
+
+    async function handleDeleteRelease() {
+      if (!selectedReleaseId) return;
+      if (!confirm("Are you sure you want to delete this release?")) return;
+
+      try {
+        /* 
+         * NOTE: You will need to add the DELETE endpoint to your server.js!
+         * See the instructions below the code block.
+         */
+        await fetch(`${API_URL}/releases/${selectedReleaseId}`, {
+          method: 'DELETE'
+        });
+        
+        releases = releases.filter(r => r.id !== selectedReleaseId);
+        selectedReleaseId = null;
+        
+        releaseDetails.style.display = 'none';
+        emptyState.style.display = 'flex';
+        
+        renderList();
+      } catch (err) {
+        console.error("Failed to delete", err);
+        alert("Error deleting release.");
+      }
+    }
+  </script>
+</body>
+</html>
