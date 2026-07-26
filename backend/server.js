@@ -190,6 +190,22 @@ app.patch('/api/releases/:id/steps', async (req, res) => {
   }
 });
 
+
+// 6. Delete a release
+app.delete('/api/releases/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await pool.query('DELETE FROM releases WHERE id = $1', [id]);
+    if (rowCount === 0) {
+      return res.status(404).json({ error: 'Release not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    console.error('Error deleting release:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
